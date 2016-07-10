@@ -48,28 +48,20 @@ def _setup_libs():
 
 data_files = [ ]
 def _datafiles():
-    # get data_files ready for exporting, probably a better way to do this
-    data_files.append((AFL_UNIX_FUZZ, (os.path.join(AFL_UNIX_FUZZ, "afl-fuzz"),),))
-    data_files.append((AFL_CGC_FUZZ, (os.path.join(AFL_CGC_FUZZ, "afl-fuzz"),),))
-
-    for ARCH in SUPPORTED_ARCHES:
-        TRACER_STR = os.path.join(AFL_UNIX_INSTALL_PATH, "tracers", ARCH)
-        data_files.append((TRACER_STR, (os.path.join(TRACER_STR, "afl-qemu-trace"),),))
-
     # for each lib export it into data_files
-    for LIB in os.listdir(os.path.join("bin", "fuzzer-libs")):
-        OUTPUT_DIR = os.path.join("bin", "fuzzer-libs", LIB, "lib")
-        for item in os.listdir(OUTPUT_DIR):
-            # library directory transport everything
-            if os.path.isdir(os.path.join(OUTPUT_DIR, item)):
-                for library in os.listdir(os.path.join(OUTPUT_DIR, item)):
-                    data_files.append((os.path.join(OUTPUT_DIR, item), (os.path.join(OUTPUT_DIR, item, library),),))
-            else:
-                data_files.append((OUTPUT_DIR, (os.path.join(OUTPUT_DIR, item),),))
+    for path,_,files in os.walk("bin/fuzzer-libs"):
+        libs = [ os.path.join(path, f) for f in files if '.so' in f ]
+        if libs:
+            data_files.append((path, libs))
 
-    # add cgc
-    TRACER_STR = os.path.join(AFL_CGC_INSTALL_PATH, "tracers", "i386")
-    data_files.append((TRACER_STR, (os.path.join(TRACER_STR, "afl-qemu-trace"),),))
+    # grab all the executables from afl
+    for s in ('afl-cgc', 'afl-unix'):
+        for path,_,files in os.walk(os.path.join("bin", s)):
+            paths = [ os.path.join(path, f) for f in files ]
+            exes = [ f for f in paths if os.path.isfile(f) and os.access(f, os.X_OK) ]
+            if exes:
+                data_files.append((path, exes))
+
     return data_files
 
 class build(_build):
