@@ -9,10 +9,12 @@ from setuptools.command.develop import develop as _develop
 AFL_UNIX_INSTALL_PATH = os.path.join("bin", "afl-unix")
 AFL_UNIX_PATCH_FILE = os.path.join("patches", "afl-patch.diff")
 AFL_CGC_INSTALL_PATH = os.path.join("bin", "afl-cgc")
+AFL_MULTI_CGC_INSTALL_PATH = os.path.join("bin", "afl-multi-cgc")
 SUPPORTED_ARCHES = ["aarch64", "x86_64", "i386", "arm", "ppc", "ppc64", "mips", "mipsel", "mips64"]
 MULTIARCH_LIBRARY_PATH = os.path.join("bin", "fuzzer-libs")
 AFL_UNIX_FUZZ = os.path.join(AFL_UNIX_INSTALL_PATH)
 AFL_CGC_FUZZ  = os.path.join(AFL_CGC_INSTALL_PATH)
+AFL_MULTI_CGC_FUZZ  = os.path.join(AFL_MULTI_CGC_INSTALL_PATH)
 
 def _setup_other_arch():
     # grab the afl-other-arch repo
@@ -30,6 +32,7 @@ def _setup_other_arch():
             raise LibError("Unable to build afl-other-arch")
 
 def _setup_cgc():
+
     if not os.path.exists(AFL_CGC_INSTALL_PATH):
         AFL_CGC_REPO = "git@git.seclab.cs.ucsb.edu:cgc/driller-afl.git"
         if subprocess.call(['git', 'clone', AFL_CGC_REPO, AFL_CGC_INSTALL_PATH]) != 0:
@@ -40,6 +43,14 @@ def _setup_cgc():
 
         if subprocess.call(['./build_qemu_support.sh'], cwd=os.path.join(AFL_CGC_INSTALL_PATH, "qemu_mode")) != 0:
             raise LibError("Unable to build afl-cgc-qemu")
+
+    if not os.path.exists(AFL_MULTI_CGC_INSTALL_PATH):
+        AFL_MULTI_CGC_REPO = "git@git.seclab.cs.ucsb.edu:cgc/multiafl.git"
+        if subprocess.call(['git', 'clone', AFL_MULTI_CGC_REPO, AFL_MULTI_CGC_INSTALL_PATH]) != 0:
+            raise LibError("Unable to retrieve afl-multi-cgc")
+
+        if subprocess.call(['make', '-j'], cwd=AFL_MULTI_CGC_INSTALL_PATH) != 0:
+            raise LibError("Unable to make afl-multi-cgc")
 
 def _setup_libs():
     if not os.path.exists(MULTIARCH_LIBRARY_PATH):
@@ -55,7 +66,7 @@ def _datafiles():
             data_files.append((path, libs))
 
     # grab all the executables from afl
-    for s in ('afl-cgc', 'afl-unix'):
+    for s in ('afl-multi-cgc', 'afl-cgc', 'afl-unix'):
         for path,_,files in os.walk(os.path.join("bin", s)):
             paths = [ os.path.join(path, f) for f in files ]
             exes = [ f for f in paths if os.path.isfile(f) and os.access(f, os.X_OK) ]
@@ -81,7 +92,7 @@ class develop(_develop):
         _develop.run(self)
 
 setup(
-    name='shellphish-afl', version='0.4.post1', description="pip package for afl",
+    name='shellphish-afl', version='0.7', description="pip package for afl",
     packages=['shellphish_afl'],
     cmdclass={'build': build, 'develop': develop},
     data_files=data_files,
