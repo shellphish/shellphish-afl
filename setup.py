@@ -19,7 +19,7 @@ AFL_MULTI_CGC_FUZZ  = os.path.join(AFL_MULTI_CGC_INSTALL_PATH)
 def _setup_other_arch():
     # grab the afl-other-arch repo
     if not os.path.exists(AFL_UNIX_INSTALL_PATH):
-        AFL_UNIX_REPO = "git@git.seclab.cs.ucsb.edu:cgc/afl-other-arch.git"
+        AFL_UNIX_REPO = "https://github.com/shellphish/afl-other-arch"
         if subprocess.call(['git', 'clone', AFL_UNIX_REPO, AFL_UNIX_INSTALL_PATH]) != 0:
             raise LibError("Unable to retrieve afl-unix")
 
@@ -34,7 +34,7 @@ def _setup_other_arch():
 def _setup_cgc():
 
     if not os.path.exists(AFL_CGC_INSTALL_PATH):
-        AFL_CGC_REPO = "git@git.seclab.cs.ucsb.edu:cgc/driller-afl.git"
+        AFL_CGC_REPO = "https://github.com/shellphish/driller-afl.git"
         if subprocess.call(['git', 'clone', AFL_CGC_REPO, AFL_CGC_INSTALL_PATH]) != 0:
             raise LibError("Unable to retrieve afl-cgc")
 
@@ -45,7 +45,7 @@ def _setup_cgc():
             raise LibError("Unable to build afl-cgc-qemu")
 
     if not os.path.exists(AFL_MULTI_CGC_INSTALL_PATH):
-        AFL_MULTI_CGC_REPO = "git@git.seclab.cs.ucsb.edu:cgc/multiafl.git"
+        AFL_MULTI_CGC_REPO = "https://github.com/mechaphish/multiafl.git"
         if subprocess.call(['git', 'clone', AFL_MULTI_CGC_REPO, AFL_MULTI_CGC_INSTALL_PATH]) != 0:
             raise LibError("Unable to retrieve afl-multi-cgc")
 
