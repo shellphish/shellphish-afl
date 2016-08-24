@@ -94,7 +94,7 @@ class develop(_develop):
         _develop.run(self)
 
 setup(
-    name='shellphish-afl', version='0.9.9', description="pip package for afl",
+    name='shellphish-afl', version='1.0', description="pip package for afl",
     packages=['shellphish_afl'],
     cmdclass={'build': build, 'develop': develop},
     data_files=data_files,
