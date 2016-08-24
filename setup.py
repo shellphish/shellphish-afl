@@ -68,6 +68,8 @@ def _datafiles():
     # grab all the executables from afl
     for s in ('afl-multi-cgc', 'afl-cgc', 'afl-unix'):
         for path,_,files in os.walk(os.path.join("bin", s)):
+            if 'qemu-2.3.0' in path:
+                continue
             paths = [ os.path.join(path, f) for f in files ]
             exes = [ f for f in paths if os.path.isfile(f) and os.access(f, os.X_OK) ]
             if exes:
