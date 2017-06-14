@@ -77,6 +77,15 @@ def _datafiles():
 
     return data_files
 
+def get_patches():
+    # get all patches
+    for path,_,files in os.walk("patches"):
+        patches = [os.path.join(path, f) for f in files]
+        if patches:
+            data_files.append((path, patches))
+
+    return data_files
+
 class build(_build):
     def run(self):
         self.execute(_setup_other_arch, (), msg="Setting up AFL-other-arch")
@@ -93,9 +102,12 @@ class develop(_develop):
         _datafiles()
         _develop.run(self)
 
+get_patches()
+
 setup(
     name='shellphish-afl', version='1.0', description="pip package for afl",
     packages=['shellphish_afl'],
     cmdclass={'build': build, 'develop': develop},
     data_files=data_files,
+    scripts=['fetchlibs.sh'],
 )
