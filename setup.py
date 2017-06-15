@@ -8,6 +8,7 @@ from setuptools.command.develop import develop as _develop
 
 AFL_UNIX_INSTALL_PATH = os.path.join("bin", "afl-unix")
 AFL_UNIX_PATCH_FILE = os.path.join("patches", "afl-patch.diff")
+AFL_UNIX_PATCH_FILE1 = os.path.join("patches", "afl-patch-libsound.diff")
 AFL_CGC_INSTALL_PATH = os.path.join("bin", "afl-cgc")
 AFL_MULTI_CGC_INSTALL_PATH = os.path.join("bin", "afl-multi-cgc")
 SUPPORTED_ARCHES = ["aarch64", "x86_64", "i386", "arm", "ppc", "ppc64", "mips", "mipsel", "mips64"]
@@ -27,6 +28,10 @@ def _setup_other_arch():
         with open(AFL_UNIX_PATCH_FILE, "rb") as f:
             if subprocess.call(['patch', '-p0'], stdin=f, cwd=AFL_UNIX_INSTALL_PATH) != 0:
                 raise LibError("Unable to apply AFL patch")
+        # new patch
+        if subprocess.call(['git', 'apply', os.path.join(os.path.dirname(os.path.abspath(__file__)), AFL_UNIX_PATCH_FILE1)],
+                           cwd=AFL_UNIX_INSTALL_PATH) != 0:
+            raise LibError("Unable to apply AFL patch")
 
         if subprocess.call(['./build.sh'] + SUPPORTED_ARCHES, cwd=AFL_UNIX_INSTALL_PATH) != 0:
             raise LibError("Unable to build afl-other-arch")

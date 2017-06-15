@@ -1,0 +1,29 @@
+diff --git a/qemu_mode/build_qemu_support.sh b/qemu_mode/build_qemu_support.sh
+index d9d9ff2..234c5d9 100755
+--- a/qemu_mode/build_qemu_support.sh
++++ b/qemu_mode/build_qemu_support.sh
+@@ -126,6 +126,7 @@ patch -p0 <patches/elfload.diff || exit 1
+ patch -p0 <patches/cpu-exec.diff || exit 1
+ patch -p0 <patches/translate-all.diff || exit 1
+ patch -p0 <patches/syscall.diff || exit 1
++git apply patches/syscall1.diff || exit 1
+ 
+ echo "[+] Patching done."
+ 
+diff --git a/qemu_mode/patches/syscall1.diff b/qemu_mode/patches/syscall1.diff
+new file mode 100644
+index 0000000..f592069
+--- /dev/null
++++ b/qemu_mode/patches/syscall1.diff
+@@ -0,0 +1,11 @@
++--- qemu_mode/qemu-2.3.0.1/linux-user/syscall.c	2017-06-14 18:21:34.884866674 -0400
+++++ qemu_mode/qemu-2.3.0/linux-user/syscall.c	2017-06-14 18:44:48.221424755 -0400
++@@ -96,7 +96,7 @@
++ #include <linux/unistd.h>
++ #include <linux/cdrom.h>
++ #include <linux/hdreg.h>
++-#include <linux/soundcard.h>
+++#include <linux/soundcard.h.oss3>
++ #include <linux/kd.h>
++ #include <linux/mtio.h>
++ #include <linux/fs.h>
