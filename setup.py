@@ -105,7 +105,7 @@ class develop(_develop):
 get_patches()
 
 setup(
-    name='shellphish-afl', version='1.1', description="pip package for afl",
+    name='shellphish-afl', version='1.2', description="pip package for afl",
     packages=['shellphish_afl'],
     cmdclass={'build': build, 'develop': develop},
     data_files=data_files,
