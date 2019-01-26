@@ -33,6 +33,9 @@ def _setup_other_arch():
             if subprocess.call(['patch', '-p0'], stdin=f, cwd=AFL_UNIX_INSTALL_PATH) != 0:
                 raise LibError("Unable to apply AFL patch")
 
+        if subprocess.call(['mv','build.sh',AFL_UNIX_INSTALL_PATH]) != 0:
+            raise LibError("Build file doesn't exist")
+
         if subprocess.call(['./build.sh'] + SUPPORTED_ARCHES, cwd=AFL_UNIX_INSTALL_PATH) != 0:
             raise LibError("Unable to build afl-other-arch")
 
