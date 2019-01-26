@@ -1,5 +1,5 @@
---- qemu_mode/build_qemu_support.sh	2019-01-25 19:26:49.314879371 -0700
-+++ qemu_mode/build_qemu_support.sh	2019-01-25 17:10:58.778156106 -0700
+--- qemu_mode/build_qemu_support.sh 	2019-01-26 15:02:56.276349827 -0700
++++ /qemu_mode/build_qemu_support.sh	2019-01-26 15:48:59.953197930 -0700
 @@ -22,6 +22,10 @@
  # will be written to ../afl-qemu-trace.
  #
@@ -11,12 +11,15 @@
  
  VERSION="2.10.0"
  QEMU_URL="http://download.qemu-project.org/qemu-${VERSION}.tar.xz"
-@@ -117,13 +121,6 @@
+@@ -115,15 +119,11 @@
+ rm -rf "qemu-${VERSION}" || exit 1
+ tar xf "$ARCHIVE" || exit 1
  
++
  echo "[+] Unpacking successful."
  
--echo "[*] Configuring QEMU for $CPU_TARGET..."
--
+ echo "[*] Configuring QEMU for $CPU_TARGET..."
+ 
 -ORIG_CPU_TARGET="$CPU_TARGET"
 -
 -test "$CPU_TARGET" = "" && CPU_TARGET="`uname -m`"
@@ -25,123 +28,108 @@
  cd qemu-$VERSION || exit 1
  
  echo "[*] Applying patches..."
-@@ -132,69 +129,78 @@
+@@ -132,26 +132,40 @@
  patch -p1 <../patches/cpu-exec.diff || exit 1
  patch -p1 <../patches/syscall.diff || exit 1
  
--echo "[+] Patching done."
--
--# --enable-pie seems to give a couple of exec's a second performance
--# improvement, much to my surprise. Not sure how universal this is..
--
--CFLAGS="-O3 -ggdb" ./configure --disable-system \
--  --enable-linux-user --disable-gtk --disable-sdl --disable-vnc \
--  --target-list="${CPU_TARGET}-linux-user" --enable-pie --enable-kvm || exit 1
--
--echo "[+] Configuration complete."
--
--echo "[*] Attempting to build QEMU (fingers crossed!)..."
 +if [ "`lsb_release -a 2>/dev/null | grep Release | awk '{print $2}'`" = 18.04 ]; then
 +    patch -p1 <../patches/memfd.diff
 +fi
++
+ echo "[+] Patching done."
  
--make || exit 1
- 
--echo "[+] Build process successful!"
-+echo "[+] Patching done."
- 
--echo "[*] Copying binary..."
+-# --enable-pie seems to give a couple of exec's a second performance
+-# improvement, much to my surprise. Not sure how universal this is..
 +CPU_TARGETS=$@
- 
--cp -f "${CPU_TARGET}-linux-user/qemu-${CPU_TARGET}" "../../afl-qemu-trace" || exit 1
++
 +for CPU_TARGET in $CPU_TARGETS; do
- 
--cd ..
--ls -l ../afl-qemu-trace || exit 1
-+    echo "[*] Configuring QEMU for $CPU_TARGET..."
- 
--echo "[+] Successfully created '../afl-qemu-trace'."
++
 +    # --enable-pie seems to give a couple of exec's a second performance
 +    # improvement, much to my surprise. Not sure how universal this is..
  
--if [ "$ORIG_CPU_TARGET" = "" ]; then
+-CFLAGS="-O3 -ggdb" ./configure --disable-system \
+-  --enable-linux-user --disable-gtk --disable-sdl --disable-vnc \
+-  --target-list="${CPU_TARGET}-linux-user" --enable-pie --enable-kvm || exit 1
 +    CFLAGS="-O3 -ggdb" ./configure --disable-system --python=`which python2` \
 +      --enable-linux-user --disable-gtk --disable-sdl --disable-vnc \
 +      --target-list="${CPU_TARGET}-linux-user" --enable-pie --enable-kvm || exit 1
  
--  echo "[*] Testing the build..."
+-echo "[+] Configuration complete."
 +    echo "[+] Configuration complete."
  
--  cd ..
+-echo "[*] Attempting to build QEMU (fingers crossed!)..."
 +    echo "[*] Attempting to build QEMU (fingers crossed!)..."
  
--  make >/dev/null || exit 1
-+    make -j || exit 1
+-make || exit 1
++    make || exit 1
  
--  gcc test-instr.c -o test-instr || exit 1
+-echo "[+] Build process successful!"
 +    echo "[+] Build process successful!"
  
--  unset AFL_INST_RATIO
+-echo "[*] Copying binary..."
 +    echo "[*] Copying binary..."
  
--  echo 0 | ./afl-showmap -m none -Q -q -o .test-instr0 ./test-instr || exit 1
--  echo 1 | ./afl-showmap -m none -Q -q -o .test-instr1 ./test-instr || exit 1
+-cp -f "${CPU_TARGET}-linux-user/qemu-${CPU_TARGET}" "../../afl-qemu-trace" || exit 1
 +    cp -f "${CPU_TARGET}-linux-user/qemu-${CPU_TARGET}" "../../afl-qemu-trace" || exit 1
- 
--  rm -f test-instr
++
 +    mkdir -p ../../tracers/$CPU_TARGET
- 
--  cmp -s .test-instr0 .test-instr1
--  DR="$?"
++
 +    cp -f "${CPU_TARGET}-linux-user/qemu-${CPU_TARGET}" "../../tracers/${CPU_TARGET}/afl-qemu-trace" || exit 1
++
 +done
  
+ cd ..
+ ls -l ../afl-qemu-trace || exit 1
+@@ -166,29 +180,29 @@
+ 
+   make >/dev/null || exit 1
+ 
+-  gcc test-instr.c -o test-instr || exit 1
+-
+-  unset AFL_INST_RATIO
+-
+-  echo 0 | ./afl-showmap -m none -Q -q -o .test-instr0 ./test-instr || exit 1
+-  echo 1 | ./afl-showmap -m none -Q -q -o .test-instr1 ./test-instr || exit 1
+-
+-  rm -f test-instr
+-
+-  cmp -s .test-instr0 .test-instr1
+-  DR="$?"
+-
 -  rm -f .test-instr0 .test-instr1
-+cd ..
- 
+-
 -  if [ "$DR" = "0" ]; then
-+ls -l ../afl-qemu-trace || exit 1
- 
+-
 -    echo "[-] Error: afl-qemu-trace instrumentation doesn't seem to work!"
 -    exit 1
-+echo "[+] Successfully created '../afl-qemu-trace'."
- 
+-
 -  fi
-+echo "[*] Testing the build..."
- 
+-
 -  echo "[+] Instrumentation tests passed. "
 -  echo "[+] All set, you can now use the -Q mode in afl-fuzz!"
-+cd ..
++#  gcc test-instr.c -o test-instr || exit 1
++#
++#  unset AFL_INST_RATIO
++#
++#  echo 0 | ./afl-showmap -m none -Q -q -o .test-instr0 ./test-instr || exit 1
++#  echo 1 | ./afl-showmap -m none -Q -q -o .test-instr1 ./test-instr || exit 1
++#
++#  rm -f test-instr
++#
++#  cmp -s .test-instr0 .test-instr1
++#  DR="$?"
++#
++#  rm -f .test-instr0 .test-instr1
++#
++#  if [ "$DR" = "0" ]; then
++#
++#    echo "[-] Error: afl-qemu-trace instrumentation doesn't seem to work!"
++#    exit 1
++#
++#  fi
++#
++#  echo "[+] Instrumentation tests passed. "
++#  echo "[+] All set, you can now use the -Q mode in afl-fuzz!"
  
--else
-+make -j >/dev/null || exit 1
+ else
  
--  echo "[!] Note: can't test instrumentation when CPU_TARGET set."
--  echo "[+] All set, you can now (hopefully) use the -Q mode in afl-fuzz!"
-+#gcc test-instr.c -o test-instr || exit 1
-+#
-+#unset AFL_INST_RATIO
-+#
-+#echo 0 | ./afl-showmap -m none -Q -q -o .test-instr0 ./test-instr || exit 1
-+#echo 1 | ./afl-showmap -m none -Q -q -o .test-instr1 ./test-instr || exit 1
-+#
-+#rm -f test-instr
-+#
-+#cmp -s .test-instr0 .test-instr1
-+#DR="$?"
-+#
-+#rm -f .test-instr0 .test-instr1
-+#
-+#if [ "$DR" = "0" ]; then
-+#
-+#  echo "[-] Error: afl-qemu-trace instrumentation doesn't seem to work!"
-+#  exit 1
-+#
-+#fi
-+#
-+#echo "[+] Instrumentation tests passed. "
- 
--fi
-+echo "[+] All set, you can now use the -Q mode in afl-fuzz!"
- 
- exit 0
