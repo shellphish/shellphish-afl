@@ -10,22 +10,25 @@ AFL_UNIX_INSTALL_PATH = os.path.join("bin", "afl-unix")
 AFL_UNIX_PATCH_FILE = os.path.join("patches", "afl-patch.diff")
 OTHER_ARCH_PATCH_FILE = os.path.join("patches", "other-arch.diff")
 BUILD_QEMU_PATCH_FILE = os.path.join("patches", "build_qemu.diff")
+AFL_UNIX_GEN = os.path.join(os.curdir, "patches", "build.sh")
 AFL_CGC_INSTALL_PATH = os.path.join("bin", "afl-cgc")
 AFL_MULTI_CGC_INSTALL_PATH = os.path.join("bin", "afl-multi-cgc")
 SUPPORTED_ARCHES = ["aarch64", "x86_64", "i386", "arm", "ppc", "ppc64", "mips", "mipsel", "mips64"]
+QEMU_PATCH = "patches/memfd.diff"
 MULTIARCH_LIBRARY_PATH = os.path.join("bin", "fuzzer-libs")
+AFL_QEMU_MODE_PATCH = AFL_UNIX_INSTALL_PATH+"/qemu_mode/patches/"
 AFL_UNIX_FUZZ = os.path.join(AFL_UNIX_INSTALL_PATH)
 AFL_CGC_FUZZ  = os.path.join(AFL_CGC_INSTALL_PATH)
 AFL_MULTI_CGC_FUZZ  = os.path.join(AFL_MULTI_CGC_INSTALL_PATH)
-AFL_UNIX_GEN = os.path.join(os.curdir, "patches", "build.sh")
+
 
 def _setup_other_arch():
-    # grab the afl-other-arch repo
+    # revisiting the afl mirrorer repo
     if not os.path.exists(AFL_UNIX_INSTALL_PATH):
         AFL_UNIX_REPO = "https://github.com/mirrorer/afl"
         if subprocess.call(['git', 'clone', AFL_UNIX_REPO, AFL_UNIX_INSTALL_PATH]) != 0:
             raise LibError("Unable to retrieve afl-unix")
-        
+
         with open(BUILD_QEMU_PATCH_FILE, "rb") as f:
             if subprocess.check_call(['patch', '-p0'],stdin=f, cwd=AFL_UNIX_INSTALL_PATH) != 0:
                 raise LibError("Unable to apply patches to qemu build")
@@ -33,8 +36,9 @@ def _setup_other_arch():
         if subprocess.call(['cp',AFL_UNIX_GEN, AFL_UNIX_INSTALL_PATH]) != 0:
             raise LibError("Build file doesn't exist")
 
-        if subprocess.check_call(['cp','patches/memfd.diff',AFL_UNIX_INSTALL_PATH+'/qemu_mode/patches/']) != 0:
-            raise LibError('memfd')
+        # patch for qemu to work with ubuntu 18.04 and above
+        if subprocess.check_call(['cp',QEMU_PATCH,AFL_QEMU_MODE_PATCH]) != 0:
+            raise LibError('Patch to work Qemu with Ubuntu 18 not found')
 
         if subprocess.check_call(['./build.sh'] + SUPPORTED_ARCHES, cwd=AFL_UNIX_INSTALL_PATH) != 0:
             raise LibError("Unable to build afl-other-arch")
