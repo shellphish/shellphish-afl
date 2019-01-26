@@ -8,7 +8,6 @@ from setuptools.command.develop import develop as _develop
 
 AFL_UNIX_INSTALL_PATH = os.path.join("bin", "afl-unix")
 AFL_UNIX_PATCH_FILE = os.path.join("patches", "afl-patch.diff")
-OTHER_ARCH_PATCH_FILE = os.path.join("patches", "other-arch.diff")
 BUILD_QEMU_PATCH_FILE = os.path.join("patches", "build_qemu.diff")
 AFL_UNIX_GEN = os.path.join(os.curdir, "patches", "build.sh")
 AFL_CGC_INSTALL_PATH = os.path.join("bin", "afl-cgc")
@@ -26,7 +25,7 @@ def _setup_other_arch():
     # revisiting the afl mirrorer repo
     if not os.path.exists(AFL_UNIX_INSTALL_PATH):
         AFL_UNIX_REPO = "https://github.com/mirrorer/afl"
-        if subprocess.call(['git', 'clone', AFL_UNIX_REPO, AFL_UNIX_INSTALL_PATH]) != 0:
+        if subprocess.call(['git', 'clone','--depth=1', AFL_UNIX_REPO, AFL_UNIX_INSTALL_PATH]) != 0:
             raise LibError("Unable to retrieve afl-unix")
 
         with open(BUILD_QEMU_PATCH_FILE, "rb") as f:
