@@ -9,6 +9,7 @@ from setuptools.command.develop import develop as _develop
 AFL_UNIX_INSTALL_PATH = os.path.join("bin", "afl-unix")
 AFL_UNIX_PATCH_FILE = os.path.join("patches", "afl-patch.diff")
 OTHER_ARCH_PATCH_FILE = os.path.join("patches", "other-arch.diff")
+BUILD_QEMU_PATCH_FILE = os.path.join("patches", "build_qemu.diff")
 AFL_CGC_INSTALL_PATH = os.path.join("bin", "afl-cgc")
 AFL_MULTI_CGC_INSTALL_PATH = os.path.join("bin", "afl-multi-cgc")
 SUPPORTED_ARCHES = ["aarch64", "x86_64", "i386", "arm", "ppc", "ppc64", "mips", "mipsel", "mips64"]
@@ -16,6 +17,7 @@ MULTIARCH_LIBRARY_PATH = os.path.join("bin", "fuzzer-libs")
 AFL_UNIX_FUZZ = os.path.join(AFL_UNIX_INSTALL_PATH)
 AFL_CGC_FUZZ  = os.path.join(AFL_CGC_INSTALL_PATH)
 AFL_MULTI_CGC_FUZZ  = os.path.join(AFL_MULTI_CGC_INSTALL_PATH)
+AFL_UNIX_GEN = os.path.join(os.curdir, "build.sh")
 
 def _setup_other_arch():
     # grab the afl-other-arch repo
@@ -23,20 +25,27 @@ def _setup_other_arch():
         AFL_UNIX_REPO = "https://github.com/mirrorer/afl"
         if subprocess.call(['git', 'clone', AFL_UNIX_REPO, AFL_UNIX_INSTALL_PATH]) != 0:
             raise LibError("Unable to retrieve afl-unix")
+        
+        with open(BUILD_QEMU_PATCH_FILE, "rb") as f:
+            if subprocess.check_call(['patch', '-p0'],stdin=f, cwd=AFL_UNIX_INSTALL_PATH) != 0:
+                raise LibError("Unable to apply patches to qemu build")
 
-        with open(OTHER_ARCH_PATCH_FILE, "rb") as f:
-            if subprocess.call(['patch', '-p'], stdin=f, cwd=AFL_UNIX_INSTALL_PATH) != 0:
-                raise LibError("Unable to apply patches to support other arches")
+#        with open(OTHER_ARCH_PATCH_FILE, "rb") as f:
+#            if subprocess.call(['patch', '-p0'], stdin=f, cwd=AFL_UNIX_INSTALL_PATH) != 0:
+#                raise LibError("Unable to apply patches to support other arches")
 
         # apply the afl arm patch
         with open(AFL_UNIX_PATCH_FILE, "rb") as f:
             if subprocess.call(['patch', '-p0'], stdin=f, cwd=AFL_UNIX_INSTALL_PATH) != 0:
                 raise LibError("Unable to apply AFL patch")
 
-        if subprocess.call(['mv','build.sh',AFL_UNIX_INSTALL_PATH]) != 0:
+        if subprocess.call(['mv',AFL_UNIX_GEN, AFL_UNIX_INSTALL_PATH]) != 0:
             raise LibError("Build file doesn't exist")
 
-        if subprocess.call(['./build.sh'] + SUPPORTED_ARCHES, cwd=AFL_UNIX_INSTALL_PATH) != 0:
+        if subprocess.check_call(['mv','patches/memfd.diff',AFL_UNIX_INSTALL_PATH+'/qemu_mode/patches/']) != 0:
+            raise LibError('memfd')
+
+        if subprocess.check_call(['./build.sh'] + SUPPORTED_ARCHES, cwd=AFL_UNIX_INSTALL_PATH) != 0:
             raise LibError("Unable to build afl-other-arch")
 
 def _setup_cgc():
