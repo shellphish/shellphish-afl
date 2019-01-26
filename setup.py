@@ -24,7 +24,7 @@ def _setup_other_arch():
         if subprocess.call(['git', 'clone', AFL_UNIX_REPO, AFL_UNIX_INSTALL_PATH]) != 0:
             raise LibError("Unable to retrieve afl-unix")
 
-        with open(OTHER_ARCH_PATCH_FILE, "rb") as f1:
+        with open(OTHER_ARCH_PATCH_FILE, "rb") as f:
             if subprocess.call(['patch', '-p'], stdin=f, cwd=AFL_UNIX_INSTALL_PATH) != 0:
                 raise LibError("Unable to apply patches to support other arches")
 
