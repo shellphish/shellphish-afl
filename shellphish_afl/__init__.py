@@ -1,6 +1,9 @@
 import os
 import distutils
 
+if not hasattr(distutils, 'sysconfig'):
+    import distutils.sysconfig
+
 def afl_bin(platform):
     return os.path.join(afl_dir(platform), 'afl-fuzz')
 
