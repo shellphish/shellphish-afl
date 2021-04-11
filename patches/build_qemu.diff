@@ -1,5 +1,5 @@
---- qemu_mode/build_qemu_support.sh 	2019-01-26 15:02:56.276349827 -0700
-+++ /qemu_mode/build_qemu_support.sh	2019-01-26 15:48:59.953197930 -0700
+--- qemu_mode/build_qemu_support.sh
++++ qemu_mode/build_qemu_support.sh
 @@ -22,6 +22,10 @@
  # will be written to ../afl-qemu-trace.
  #
@@ -11,7 +11,7 @@
  
  VERSION="2.10.0"
  QEMU_URL="http://download.qemu-project.org/qemu-${VERSION}.tar.xz"
-@@ -115,15 +119,11 @@
+@@ -115,15 +119,11 @@ echo "[*] Uncompressing archive (this will take a while)..."
  rm -rf "qemu-${VERSION}" || exit 1
  tar xf "$ARCHIVE" || exit 1
  
@@ -28,11 +28,20 @@
  cd qemu-$VERSION || exit 1
  
  echo "[*] Applying patches..."
-@@ -132,26 +132,40 @@
+@@ -132,26 +132,49 @@ patch -p1 <../patches/elfload.diff || exit 1
  patch -p1 <../patches/cpu-exec.diff || exit 1
  patch -p1 <../patches/syscall.diff || exit 1
  
-+if [ "`lsb_release -a 2>/dev/null | grep Release | awk '{print $2}'`" = 18.04 ]; then
++apply_patch=0
++if [ `lsb_release -a 2>/dev/null | grep 'Distributor ID' | awk '{print $3}'` = Ubuntu ]; then
++    if [ `lsb_release -a 2>/dev/null | grep 'Release' | awk '{print $2}' | tr -d .` -ge 1804 ]; then
++        apply_patch=1
++    fi
++else
++    apply_patch=1
++fi
++
++if [ $apply_patch -eq 1 ]; then
 +    patch -p1 <../patches/memfd.diff
 +fi
 +
@@ -41,35 +50,35 @@
 -# --enable-pie seems to give a couple of exec's a second performance
 -# improvement, much to my surprise. Not sure how universal this is..
 +CPU_TARGETS=$@
-+
-+for CPU_TARGET in $CPU_TARGETS; do
-+
-+    # --enable-pie seems to give a couple of exec's a second performance
-+    # improvement, much to my surprise. Not sure how universal this is..
  
 -CFLAGS="-O3 -ggdb" ./configure --disable-system \
 -  --enable-linux-user --disable-gtk --disable-sdl --disable-vnc \
 -  --target-list="${CPU_TARGET}-linux-user" --enable-pie --enable-kvm || exit 1
++for CPU_TARGET in $CPU_TARGETS; do
+ 
+-echo "[+] Configuration complete."
++    # --enable-pie seems to give a couple of exec's a second performance
++    # improvement, much to my surprise. Not sure how universal this is..
+ 
+-echo "[*] Attempting to build QEMU (fingers crossed!)..."
 +    CFLAGS="-O3 -ggdb" ./configure --disable-system --python=`which python2` \
 +      --enable-linux-user --disable-gtk --disable-sdl --disable-vnc \
 +      --target-list="${CPU_TARGET}-linux-user" --enable-pie --enable-kvm || exit 1
  
--echo "[+] Configuration complete."
+-make || exit 1
 +    echo "[+] Configuration complete."
  
--echo "[*] Attempting to build QEMU (fingers crossed!)..."
+-echo "[+] Build process successful!"
 +    echo "[*] Attempting to build QEMU (fingers crossed!)..."
  
--make || exit 1
+-echo "[*] Copying binary..."
 +    make || exit 1
  
--echo "[+] Build process successful!"
-+    echo "[+] Build process successful!"
- 
--echo "[*] Copying binary..."
-+    echo "[*] Copying binary..."
- 
 -cp -f "${CPU_TARGET}-linux-user/qemu-${CPU_TARGET}" "../../afl-qemu-trace" || exit 1
++    echo "[+] Build process successful!"
++
++    echo "[*] Copying binary..."
++
 +    cp -f "${CPU_TARGET}-linux-user/qemu-${CPU_TARGET}" "../../afl-qemu-trace" || exit 1
 +
 +    mkdir -p ../../tracers/$CPU_TARGET
@@ -80,7 +89,7 @@
  
  cd ..
  ls -l ../afl-qemu-trace || exit 1
-@@ -166,29 +180,29 @@
+@@ -166,29 +189,29 @@ if [ "$ORIG_CPU_TARGET" = "" ]; then
  
    make >/dev/null || exit 1
  
