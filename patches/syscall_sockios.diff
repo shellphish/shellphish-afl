@@ -1,0 +1,10 @@
+--- qemu-2.10.0/linux-user/syscall.c
++++ qemu-2.10.0/linux-user/syscall.c
+@@ -41,6 +41,7 @@ int __clone2(int (*fn)(void *), void *child_stack_base,
+              size_t stack_size, int flags, void *arg, ...);
+ #endif
+ #include <sys/socket.h>
++#include <linux/sockios.h>
+ #include <sys/un.h>
+ #include <sys/uio.h>
+ #include <poll.h>

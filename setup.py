@@ -13,7 +13,7 @@ AFL_UNIX_GEN = os.path.join(os.curdir, "patches", "build.sh")
 AFL_CGC_INSTALL_PATH = os.path.join("bin", "afl-cgc")
 AFL_MULTI_CGC_INSTALL_PATH = os.path.join("bin", "afl-multi-cgc")
 SUPPORTED_ARCHES = ["aarch64", "x86_64", "i386", "arm", "ppc", "ppc64", "mips", "mipsel", "mips64"]
-QEMU_PATCH = "patches/memfd.diff"
+QEMU_PATCHES = ["patches/memfd.diff", "patches/gettid.diff", "patches/syscall_sockios.diff", "patches/stime.diff"]
 MULTIARCH_LIBRARY_PATH = os.path.join("bin", "fuzzer-libs")
 AFL_QEMU_MODE_PATCH = AFL_UNIX_INSTALL_PATH+"/qemu_mode/patches/"
 AFL_UNIX_FUZZ = os.path.join(AFL_UNIX_INSTALL_PATH)
@@ -35,9 +35,9 @@ def _setup_other_arch():
         if subprocess.call(['cp',AFL_UNIX_GEN, AFL_UNIX_INSTALL_PATH]) != 0:
             raise LibError("Build file doesn't exist")
 
-        # patch for qemu to work with ubuntu 18.04 and above
-        if subprocess.check_call(['cp',QEMU_PATCH,AFL_QEMU_MODE_PATCH]) != 0:
-            raise LibError('Patch to work Qemu with Ubuntu 18 not found')
+        # patches for QEMU to work with ubuntu 18.04 and above
+        if subprocess.check_call(['cp'] + QEMU_PATCHES + [AFL_QEMU_MODE_PATCH]) != 0:
+            raise LibError('Patches to make QEMU work with Ubuntu 18.04 and above not found')
 
         if subprocess.check_call(['./build.sh'] + SUPPORTED_ARCHES, cwd=AFL_UNIX_INSTALL_PATH) != 0:
             raise LibError("Unable to build afl-other-arch")
